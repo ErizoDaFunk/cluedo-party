@@ -48,3 +48,6 @@ app.*.map.json
 # Coverage
 coverage/
 *.lcov
+
+# FVM Version Cache
+.fvm/
