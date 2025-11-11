@@ -26,6 +26,10 @@ class GameSetupBloc extends Bloc<GameSetupEvent, GameSetupState> {
     on<LoadGameSetup>(_onLoadGameSetup);
     on<AddPlayerEvent>(_onAddPlayer);
     on<RemovePlayerEvent>(_onRemovePlayer);
+    on<ToggleWeaponRequirement>(_onToggleWeaponRequirement);
+    on<ToggleLocationRequirement>(_onToggleLocationRequirement);
+    on<UpdateCustomWeapons>(_onUpdateCustomWeapons);
+    on<UpdateCustomLocations>(_onUpdateCustomLocations);
     on<StartGameEvent>(_onStartGame);
     on<ResetGameSetup>(_onResetGameSetup);
   }
@@ -42,8 +46,12 @@ class GameSetupBloc extends Bloc<GameSetupEvent, GameSetupState> {
       (failure) => emit(GameSetupError(failure.message)),
       (config) {
         final players = config?.players ?? [];
-        final canStart = players.length >= GameConstants.minPlayers;
-        emit(GameSetupLoaded(players: players, canStart: canStart));
+        final canStart = config?.canStart ?? false;
+        emit(GameSetupLoaded(
+          players: players,
+          canStart: canStart,
+          config: config,
+        ));
       },
     );
   }
@@ -73,11 +81,12 @@ class GameSetupBloc extends Bloc<GameSetupEvent, GameSetupState> {
           (failure) => emit(GameSetupError(failure.message)),
           (config) {
             final players = config?.players ?? [];
-            final canStart = players.length >= GameConstants.minPlayers;
+            final canStart = config?.canStart ?? false;
             emit(GameSetupSuccess(
               message: GameConstants.successPlayerAdded,
               players: players,
               canStart: canStart,
+              config: config,
             ));
           },
         );
@@ -100,11 +109,12 @@ class GameSetupBloc extends Bloc<GameSetupEvent, GameSetupState> {
           (failure) => emit(GameSetupError(failure.message)),
           (config) {
             final players = config?.players ?? [];
-            final canStart = players.length >= GameConstants.minPlayers;
+            final canStart = config?.canStart ?? false;
             emit(GameSetupSuccess(
               message: GameConstants.successPlayerRemoved,
               players: players,
               canStart: canStart,
+              config: config,
             ));
           },
         );
@@ -154,6 +164,118 @@ class GameSetupBloc extends Bloc<GameSetupEvent, GameSetupState> {
     result.fold(
       (failure) => emit(GameSetupError(failure.message)),
       (_) => emit(const GameSetupLoaded(players: [], canStart: false)),
+    );
+  }
+
+  Future<void> _onToggleWeaponRequirement(
+    ToggleWeaponRequirement event,
+    Emitter<GameSetupState> emit,
+  ) async {
+    final configResult = await repository.getCurrentConfig();
+
+    configResult.fold(
+      (failure) => emit(GameSetupError(failure.message)),
+      (config) async {
+        if (config == null) return;
+
+        final updatedConfig = config.toggleWeaponRequirement(event.requireWeapon);
+        final saveResult = await repository.saveConfig(updatedConfig);
+
+        saveResult.fold(
+          (failure) => emit(GameSetupError(failure.message)),
+          (_) {
+            emit(GameSetupLoaded(
+              players: updatedConfig.players,
+              canStart: updatedConfig.canStart,
+              config: updatedConfig,
+            ));
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _onToggleLocationRequirement(
+    ToggleLocationRequirement event,
+    Emitter<GameSetupState> emit,
+  ) async {
+    final configResult = await repository.getCurrentConfig();
+
+    configResult.fold(
+      (failure) => emit(GameSetupError(failure.message)),
+      (config) async {
+        if (config == null) return;
+
+        final updatedConfig = config.toggleLocationRequirement(event.requireLocation);
+        final saveResult = await repository.saveConfig(updatedConfig);
+
+        saveResult.fold(
+          (failure) => emit(GameSetupError(failure.message)),
+          (_) {
+            emit(GameSetupLoaded(
+              players: updatedConfig.players,
+              canStart: updatedConfig.canStart,
+              config: updatedConfig,
+            ));
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _onUpdateCustomWeapons(
+    UpdateCustomWeapons event,
+    Emitter<GameSetupState> emit,
+  ) async {
+    final configResult = await repository.getCurrentConfig();
+
+    configResult.fold(
+      (failure) => emit(GameSetupError(failure.message)),
+      (config) async {
+        if (config == null) return;
+
+        final updatedConfig = config.updateWeapons(event.weapons);
+        final saveResult = await repository.saveConfig(updatedConfig);
+
+        saveResult.fold(
+          (failure) => emit(GameSetupError(failure.message)),
+          (_) {
+            emit(GameSetupLoaded(
+              players: updatedConfig.players,
+              canStart: updatedConfig.canStart,
+              config: updatedConfig,
+            ));
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _onUpdateCustomLocations(
+    UpdateCustomLocations event,
+    Emitter<GameSetupState> emit,
+  ) async {
+    final configResult = await repository.getCurrentConfig();
+
+    configResult.fold(
+      (failure) => emit(GameSetupError(failure.message)),
+      (config) async {
+        if (config == null) return;
+
+        final updatedConfig = config.updateLocations(event.locations);
+        final saveResult = await repository.saveConfig(updatedConfig);
+
+        saveResult.fold(
+          (failure) => emit(GameSetupError(failure.message)),
+          (_) {
+            emit(GameSetupLoaded(
+              players: updatedConfig.players,
+              canStart: updatedConfig.canStart,
+              config: updatedConfig,
+            ));
+          },
+        );
+      },
     );
   }
 }

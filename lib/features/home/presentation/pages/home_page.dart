@@ -22,9 +22,9 @@ class HomePage extends StatelessWidget {
               const SizedBox(height: 24),
               
               // Game title
-              Text(
+              const Text(
                 GameConstants.appTitle,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 48,
                   fontWeight: FontWeight.bold,
                 ),
