@@ -27,6 +27,10 @@ class _GameSetupPageState extends State<GameSetupPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         title: const Text('Configurar Partida'),
         actions: [
           IconButton(
@@ -48,11 +52,12 @@ class _GameSetupPageState extends State<GameSetupPage> {
               ),
             );
           } else if (state is GameSetupSuccess) {
+            // Show success message but DON'T interfere with UI updates
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
                 backgroundColor: AppTheme.successColor,
-                duration: const Duration(seconds: 1),
+                duration: const Duration(milliseconds: 800),
               ),
             );
           } else if (state is GameSetupStarted) {
@@ -68,41 +73,13 @@ class _GameSetupPageState extends State<GameSetupPage> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final List<Player> players = state is GameSetupLoaded
-              ? state.players
-              : state is GameSetupSuccess
-                  ? state.players
-                  : <Player>[];
-
-          final bool requireWeapon = state is GameSetupLoaded
-              ? state.requireWeapon
-              : state is GameSetupSuccess
-                  ? (state.config?.requireWeapon ?? true)
-                  : true;
-
-          final bool requireLocation = state is GameSetupLoaded
-              ? state.requireLocation
-              : state is GameSetupSuccess
-                  ? (state.config?.requireLocation ?? true)
-                  : true;
-
-          final List<String>? customWeapons = state is GameSetupLoaded
-              ? state.customWeapons
-              : state is GameSetupSuccess
-                  ? state.config?.customWeapons
-                  : null;
-
-          final List<String>? customLocations = state is GameSetupLoaded
-              ? state.customLocations
-              : state is GameSetupSuccess
-                  ? state.config?.customLocations
-                  : null;
-
-          final bool canStart = state is GameSetupLoaded
-              ? state.canStart
-              : state is GameSetupSuccess
-                  ? state.canStart
-                  : false;
+          // Extract data from BOTH GameSetupLoaded AND GameSetupSuccess
+          final List<Player> players = _extractPlayers(state);
+          final bool requireWeapon = _extractRequireWeapon(state);
+          final bool requireLocation = _extractRequireLocation(state);
+          final List<String>? customWeapons = _extractCustomWeapons(state);
+          final List<String>? customLocations = _extractCustomLocations(state);
+          final bool canStart = _extractCanStart(state);
 
           final List<Step> steps = _buildSteps(
             players: players,
@@ -113,7 +90,19 @@ class _GameSetupPageState extends State<GameSetupPage> {
             canStart: canStart,
           );
 
+          // Ensure currentStep is within bounds when steps change
+          if (_currentStep >= steps.length) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                setState(() {
+                  _currentStep = steps.length - 1;
+                });
+              }
+            });
+          }
+
           return Stepper(
+            key: ValueKey('stepper_${steps.length}'), // Force rebuild when steps change
             currentStep: _currentStep,
             onStepContinue: () {
               if (_currentStep < steps.length - 1) {
@@ -208,6 +197,43 @@ class _GameSetupPageState extends State<GameSetupPage> {
     );
   }
 
+  // Helper methods to extract data from different states
+  List<Player> _extractPlayers(GameSetupState state) {
+    if (state is GameSetupLoaded) return state.players;
+    if (state is GameSetupSuccess) return state.players;
+    return <Player>[];
+  }
+
+  bool _extractRequireWeapon(GameSetupState state) {
+    if (state is GameSetupLoaded) return state.requireWeapon;
+    if (state is GameSetupSuccess) return state.config?.requireWeapon ?? true;
+    return true;
+  }
+
+  bool _extractRequireLocation(GameSetupState state) {
+    if (state is GameSetupLoaded) return state.requireLocation;
+    if (state is GameSetupSuccess) return state.config?.requireLocation ?? true;
+    return true;
+  }
+
+  List<String>? _extractCustomWeapons(GameSetupState state) {
+    if (state is GameSetupLoaded) return state.customWeapons;
+    if (state is GameSetupSuccess) return state.config?.customWeapons;
+    return null;
+  }
+
+  List<String>? _extractCustomLocations(GameSetupState state) {
+    if (state is GameSetupLoaded) return state.customLocations;
+    if (state is GameSetupSuccess) return state.config?.customLocations;
+    return null;
+  }
+
+  bool _extractCanStart(GameSetupState state) {
+    if (state is GameSetupLoaded) return state.canStart;
+    if (state is GameSetupSuccess) return state.canStart;
+    return false;
+  }
+
   List<Step> _buildSteps({
     required List<Player> players,
     required bool requireWeapon,
@@ -230,10 +256,7 @@ class _GameSetupPageState extends State<GameSetupPage> {
         title: const Text('Reglas'),
         subtitle: Text(
             '${requireWeapon ? "Armas" : ""}${requireWeapon && requireLocation ? " y " : ""}${requireLocation ? "Lugares" : ""}'),
-        content: GameRulesStep(
-          requireWeapon: requireWeapon,
-          requireLocation: requireLocation,
-        ),
+        content: const GameRulesStep(),
         isActive: _currentStep >= 1,
         state: StepState.indexed,
       ),

@@ -72,8 +72,8 @@ class GameSetupBloc extends Bloc<GameSetupEvent, GameSetupState> {
 
     final result = await addPlayerUseCase(player);
 
-    result.fold(
-      (failure) => emit(GameSetupError(failure.message)),
+    await result.fold(
+      (failure) async => emit(GameSetupError(failure.message)),
       (_) async {
         // Reload config to get updated list
         final configResult = await repository.getCurrentConfig();
@@ -100,8 +100,8 @@ class GameSetupBloc extends Bloc<GameSetupEvent, GameSetupState> {
   ) async {
     final result = await removePlayerUseCase(event.playerId);
 
-    result.fold(
-      (failure) => emit(GameSetupError(failure.message)),
+    await result.fold(
+      (failure) async => emit(GameSetupError(failure.message)),
       (_) async {
         // Reload config to get updated list
         final configResult = await repository.getCurrentConfig();
@@ -128,8 +128,8 @@ class GameSetupBloc extends Bloc<GameSetupEvent, GameSetupState> {
   ) async {
     final configResult = await repository.getCurrentConfig();
 
-    configResult.fold(
-      (failure) => emit(GameSetupError(failure.message)),
+    await configResult.fold(
+      (failure) async => emit(GameSetupError(failure.message)),
       (config) async {
         if (config == null) {
           emit(const GameSetupError(GameConstants.errorNoActiveGame));
@@ -173,8 +173,8 @@ class GameSetupBloc extends Bloc<GameSetupEvent, GameSetupState> {
   ) async {
     final configResult = await repository.getCurrentConfig();
 
-    configResult.fold(
-      (failure) => emit(GameSetupError(failure.message)),
+    await configResult.fold(
+      (failure) async => emit(GameSetupError(failure.message)),
       (config) async {
         if (config == null) return;
 
@@ -201,8 +201,8 @@ class GameSetupBloc extends Bloc<GameSetupEvent, GameSetupState> {
   ) async {
     final configResult = await repository.getCurrentConfig();
 
-    configResult.fold(
-      (failure) => emit(GameSetupError(failure.message)),
+    await configResult.fold(
+      (failure) async => emit(GameSetupError(failure.message)),
       (config) async {
         if (config == null) return;
 
@@ -229,8 +229,8 @@ class GameSetupBloc extends Bloc<GameSetupEvent, GameSetupState> {
   ) async {
     final configResult = await repository.getCurrentConfig();
 
-    configResult.fold(
-      (failure) => emit(GameSetupError(failure.message)),
+    await configResult.fold(
+      (failure) async => emit(GameSetupError(failure.message)),
       (config) async {
         if (config == null) return;
 
@@ -257,8 +257,8 @@ class GameSetupBloc extends Bloc<GameSetupEvent, GameSetupState> {
   ) async {
     final configResult = await repository.getCurrentConfig();
 
-    configResult.fold(
-      (failure) => emit(GameSetupError(failure.message)),
+    await configResult.fold(
+      (failure) async => emit(GameSetupError(failure.message)),
       (config) async {
         if (config == null) return;
 
