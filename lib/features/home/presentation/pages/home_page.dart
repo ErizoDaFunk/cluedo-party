@@ -32,7 +32,7 @@ class HomePage extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               const Text(
-                '🎭 ¿Quién es el asesino? 🔪',
+                '🎭 Mata antes de que te maten 🔪',
                 style: TextStyle(
                   fontSize: 20,
                   fontStyle: FontStyle.italic,
@@ -67,7 +67,7 @@ class HomePage extends StatelessWidget {
                   onPressed: null, // Disabled for now
                   icon: const Icon(Icons.devices, size: 28),
                   label: const Text(
-                    'Modo Multijugador',
+                    'Modo Varios Dispositivos',
                     style: TextStyle(fontSize: 18),
                   ),
                   style: ElevatedButton.styleFrom(

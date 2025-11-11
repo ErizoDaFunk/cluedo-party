@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../../game_engine/domain/entities/game.dart';
 import '../../domain/entities/game_config.dart';
 import '../../domain/entities/player.dart';
 
@@ -71,11 +72,15 @@ class GameSetupSuccess extends GameSetupState {
 
 /// Game started state - navigate to game
 class GameSetupStarted extends GameSetupState {
+  final Game game;
   final List<Player> players;
 
-  const GameSetupStarted(this.players);
+  const GameSetupStarted({
+    required this.game,
+    required this.players,
+  });
 
   @override
-  List<Object?> get props => [players];
+  List<Object?> get props => [game, players];
 }
 

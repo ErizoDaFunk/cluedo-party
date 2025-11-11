@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/config/theme.dart';
 import '../../../../core/constants/game_constants.dart';
+import '../../../game_engine/presentation/pages/assignment_reveal_page.dart';
 import '../../domain/entities/player.dart';
 import '../bloc/game_setup_bloc.dart';
 import '../bloc/game_setup_event.dart';
@@ -61,9 +62,13 @@ class _GameSetupPageState extends State<GameSetupPage> {
               ),
             );
           } else if (state is GameSetupStarted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('¡Juego iniciado! (navegación pendiente)'),
+            // Navigate to assignment reveal page
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => AssignmentRevealPage(
+                  game: state.game,
+                  players: state.players,
+                ),
               ),
             );
           }

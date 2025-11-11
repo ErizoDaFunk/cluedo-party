@@ -1,6 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/constants/game_constants.dart';
+import '../../../game_engine/domain/entities/game.dart';
+import '../../../game_engine/domain/usecases/generate_assignments.dart';
 import '../../domain/entities/player.dart';
 import '../../domain/repositories/game_setup_repository.dart';
 import '../../domain/usecases/add_player.dart';
@@ -15,6 +17,7 @@ class GameSetupBloc extends Bloc<GameSetupEvent, GameSetupState> {
   final AddPlayer addPlayerUseCase;
   final RemovePlayer removePlayerUseCase;
   final ValidateGameConfig validateGameConfigUseCase;
+  final GenerateAssignments generateAssignments;
   final _uuid = const Uuid();
 
   GameSetupBloc({
@@ -22,6 +25,7 @@ class GameSetupBloc extends Bloc<GameSetupEvent, GameSetupState> {
     required this.addPlayerUseCase,
     required this.removePlayerUseCase,
     required this.validateGameConfigUseCase,
+    required this.generateAssignments,
   }) : super(const GameSetupInitial()) {
     on<LoadGameSetup>(_onLoadGameSetup);
     on<AddPlayerEvent>(_onAddPlayer);
@@ -139,14 +143,32 @@ class GameSetupBloc extends Bloc<GameSetupEvent, GameSetupState> {
         // Validate configuration
         final validationResult = await validateGameConfigUseCase(config);
         
-        validationResult.fold(
-          (failure) => emit(GameSetupError(failure.message)),
-          (isValid) {
-            if (isValid) {
-              emit(GameSetupStarted(config.players));
-            } else {
+        await validationResult.fold(
+          (failure) async => emit(GameSetupError(failure.message)),
+          (isValid) async {
+            if (!isValid) {
               emit(const GameSetupError(GameConstants.errorNotEnoughPlayers));
+              return;
             }
+
+            // Generate assignments
+            final assignmentsResult = await generateAssignments(config);
+            
+            assignmentsResult.fold(
+              (failure) => emit(GameSetupError(failure.message)),
+              (assignments) {
+                final game = Game(
+                  id: _uuid.v4(),
+                  assignments: assignments,
+                  createdAt: DateTime.now(),
+                );
+                
+                emit(GameSetupStarted(
+                  game: game,
+                  players: config.players,
+                ));
+              },
+            );
           },
         );
       },

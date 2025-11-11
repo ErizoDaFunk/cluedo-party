@@ -3,9 +3,10 @@ import '../../features/game_data/data/datasources/custom_items_datasource.dart';
 import '../../features/game_data/data/datasources/default_items_datasource.dart';
 import '../../features/game_data/data/repositories/items_repository_impl.dart';
 import '../../features/game_data/domain/repositories/items_repository.dart';
-import '../../features/game_data/domain/usecases/get_locations.dart';
-import '../../features/game_data/domain/usecases/get_weapons.dart';
-import '../../features/game_setup/data/datasources/local_game_datasource.dart';
+import '../../../features/game_data/domain/usecases/get_locations.dart';
+import '../../../features/game_data/domain/usecases/get_weapons.dart';
+import '../../../features/game_engine/domain/usecases/generate_assignments.dart';
+import '../../../features/game_setup/data/datasources/local_game_datasource.dart';
 import '../../features/game_setup/data/repositories/game_setup_repository_impl.dart';
 import '../../features/game_setup/domain/repositories/game_setup_repository.dart';
 import '../../features/game_setup/domain/usecases/add_player.dart';
@@ -66,6 +67,9 @@ Future<void> setupDependencies() async {
   getIt.registerLazySingleton(() => AddPlayer(getIt<GameSetupRepository>()));
   getIt.registerLazySingleton(() => RemovePlayer(getIt<GameSetupRepository>()));
   getIt.registerLazySingleton(() => ValidateGameConfig(getIt<GameSetupRepository>()));
+  
+  // Game Engine Use Cases
+  getIt.registerLazySingleton(() => GenerateAssignments());
 
   // ============================================
   // BLoCs (Factories - new instance each time)
@@ -77,6 +81,7 @@ Future<void> setupDependencies() async {
       addPlayerUseCase: getIt<AddPlayer>(),
       removePlayerUseCase: getIt<RemovePlayer>(),
       validateGameConfigUseCase: getIt<ValidateGameConfig>(),
+      generateAssignments: getIt<GenerateAssignments>(),
     ),
   );
 }
