@@ -29,6 +29,16 @@ class _WeaponsSetupStepState extends State<WeaponsSetupStep> {
   }
 
   @override
+  void didUpdateWidget(WeaponsSetupStep oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Update local state when props change (e.g., when navigating back to this step)
+    if (widget.customWeapons != oldWidget.customWeapons) {
+      _weapons = widget.customWeapons?.toList() ??
+          GameConstants.defaultWeapons.toList();
+    }
+  }
+
+  @override
   void dispose() {
     _weaponController.dispose();
     super.dispose();

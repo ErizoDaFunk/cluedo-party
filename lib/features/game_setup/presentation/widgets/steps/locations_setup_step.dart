@@ -29,6 +29,16 @@ class _LocationsSetupStepState extends State<LocationsSetupStep> {
   }
 
   @override
+  void didUpdateWidget(LocationsSetupStep oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Update local state when props change (e.g., when navigating back to this step)
+    if (widget.customLocations != oldWidget.customLocations) {
+      _locations = widget.customLocations?.toList() ??
+          GameConstants.defaultLocations.toList();
+    }
+  }
+
+  @override
   void dispose() {
     _locationController.dispose();
     super.dispose();
