@@ -68,6 +68,8 @@ class _GameSetupPageState extends State<GameSetupPage> {
                 builder: (_) => AssignmentRevealPage(
                   game: state.game,
                   players: state.players,
+                  weapons: state.weapons,
+                  locations: state.locations,
                 ),
               ),
             );

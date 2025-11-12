@@ -8,10 +8,14 @@ import '../../../game_setup/domain/entities/player.dart';
 class AssignmentRevealBloc extends Bloc<AssignmentRevealEvent, AssignmentRevealState> {
   final Game game;
   final List<Player> players;
+  final List<String>? weapons;
+  final List<String>? locations;
 
   AssignmentRevealBloc({
     required this.game,
     required this.players,
+    this.weapons,
+    this.locations,
   }) : super(const AssignmentRevealInitial()) {
     on<LoadAssignments>(_onLoadAssignments);
     on<RevealAssignment>(_onRevealAssignment);
@@ -64,13 +68,17 @@ class AssignmentRevealBloc extends Bloc<AssignmentRevealEvent, AssignmentRevealS
       return;
     }
 
+    // Get weapon and location names (they are stored as names in the assignment, not IDs)
+    final weaponName = assignment.weaponId;
+    final locationName = assignment.locationId;
+
     // Show the assignment in a revealing state
     emit(AssignmentRevealing(
       assignment: assignment,
       killer: killer,
       victim: victim,
-      weaponName: assignment.weaponId,
-      locationName: assignment.locationId,
+      weaponName: weaponName,
+      locationName: locationName,
     ));
 
     // Wait a bit, then return to loaded state with updated game

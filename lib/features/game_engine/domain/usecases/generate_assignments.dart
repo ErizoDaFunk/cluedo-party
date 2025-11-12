@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:dartz/dartz.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/errors/failures.dart';
+import '../../../../core/utils/app_logger.dart';
 import '../../../game_setup/domain/entities/game_config.dart';
 import '../../../game_setup/domain/entities/player.dart';
 import '../entities/assignment.dart';
@@ -45,8 +46,18 @@ class GenerateAssignments {
 
       // Distribute weapons if required
       if (config.requireWeapon) {
-        final weapons = config.customWeapons ?? [];
+        AppLogger.info('GenerateAssignments', 'Processing weapons distribution');
+        AppLogger.debug('GenerateAssignments', 'customWeapons is null: ${config.customWeapons == null}');
+        AppLogger.debug('GenerateAssignments', 'customWeapons length: ${config.customWeapons?.length ?? 0}');
+        
+        final List<String> weapons = (config.customWeapons != null && config.customWeapons!.isNotEmpty)
+            ? List<String>.from(config.customWeapons!)
+            : [];
+        
+        AppLogger.debug('GenerateAssignments', 'Weapons to distribute: ${weapons.length}');
+        
         if (weapons.isEmpty) {
+          AppLogger.error('GenerateAssignments', 'ERROR: No weapons available!');
           return Left(ValidationFailure('No weapons available'));
         }
         _distributeItems(assignments, weapons, isWeapon: true);
@@ -54,8 +65,18 @@ class GenerateAssignments {
 
       // Distribute locations if required
       if (config.requireLocation) {
-        final locations = config.customLocations ?? [];
+        AppLogger.info('GenerateAssignments', 'Processing locations distribution');
+        AppLogger.debug('GenerateAssignments', 'customLocations is null: ${config.customLocations == null}');
+        AppLogger.debug('GenerateAssignments', 'customLocations length: ${config.customLocations?.length ?? 0}');
+        
+        final List<String> locations = (config.customLocations != null && config.customLocations!.isNotEmpty)
+            ? List<String>.from(config.customLocations!)
+            : [];
+        
+        AppLogger.debug('GenerateAssignments', 'Locations to distribute: ${locations.length}');
+        
         if (locations.isEmpty) {
+          AppLogger.error('GenerateAssignments', 'ERROR: No locations available!');
           return Left(ValidationFailure('No locations available'));
         }
         _distributeItems(assignments, locations, isWeapon: false);

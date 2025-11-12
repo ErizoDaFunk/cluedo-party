@@ -1,8 +1,10 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/constants/game_constants.dart';
+import '../../../../core/utils/app_logger.dart';
 import '../../../game_engine/domain/entities/game.dart';
 import '../../../game_engine/domain/usecases/generate_assignments.dart';
+import '../../domain/entities/game_config.dart';
 import '../../domain/entities/player.dart';
 import '../../domain/repositories/game_setup_repository.dart';
 import '../../domain/usecases/add_player.dart';
@@ -49,12 +51,50 @@ class GameSetupBloc extends Bloc<GameSetupEvent, GameSetupState> {
     result.fold(
       (failure) => emit(GameSetupError(failure.message)),
       (config) {
-        final players = config?.players ?? [];
-        final canStart = config?.canStart ?? false;
+        AppLogger.info('GameSetupBloc', 'Loading config...');
+        AppLogger.debug('GameSetupBloc', 'Config is null: ${config == null}');
+        if (config != null) {
+          AppLogger.debug('GameSetupBloc', 'Config requireWeapon: ${config.requireWeapon}');
+          AppLogger.debug('GameSetupBloc', 'Config requireLocation: ${config.requireLocation}');
+          AppLogger.debug('GameSetupBloc', 'Config customWeapons null: ${config.customWeapons == null}');
+          AppLogger.debug('GameSetupBloc', 'Config customWeapons length: ${config.customWeapons?.length ?? 0}');
+          AppLogger.debug('GameSetupBloc', 'Config customLocations null: ${config.customLocations == null}');
+          AppLogger.debug('GameSetupBloc', 'Config customLocations length: ${config.customLocations?.length ?? 0}');
+        }
+        
+        // If config exists but weapons/locations are missing, initialize them
+        GameConfig? finalConfig = config;
+        if (config != null) {
+          var needsUpdate = false;
+          var updatedConfig = config;
+          
+          // Initialize weapons if required but empty
+          if (config.requireWeapon && (config.customWeapons == null || config.customWeapons!.isEmpty)) {
+            AppLogger.warning('GameSetupBloc', 'Initializing weapons with defaults');
+            updatedConfig = updatedConfig.updateWeapons(GameConstants.defaultWeapons.toList());
+            needsUpdate = true;
+          }
+          
+          // Initialize locations if required but empty
+          if (config.requireLocation && (config.customLocations == null || config.customLocations!.isEmpty)) {
+            AppLogger.warning('GameSetupBloc', 'Initializing locations with defaults');
+            updatedConfig = updatedConfig.updateLocations(GameConstants.defaultLocations.toList());
+            needsUpdate = true;
+          }
+          
+          if (needsUpdate) {
+            AppLogger.info('GameSetupBloc', 'Saving updated config with initialized weapons/locations');
+            repository.saveConfig(updatedConfig);
+            finalConfig = updatedConfig;
+          }
+        }
+        
+        final players = finalConfig?.players ?? [];
+        final canStart = finalConfig?.canStart ?? false;
         emit(GameSetupLoaded(
           players: players,
           canStart: canStart,
-          config: config,
+          config: finalConfig,
         ));
       },
     );
@@ -140,8 +180,38 @@ class GameSetupBloc extends Bloc<GameSetupEvent, GameSetupState> {
           return;
         }
 
+        AppLogger.info('GameSetupBloc', '========== START GAME ==========');
+        AppLogger.info('GameSetupBloc', 'Players: ${config.players.length}');
+        AppLogger.info('GameSetupBloc', 'Require Weapon: ${config.requireWeapon}');
+        AppLogger.info('GameSetupBloc', 'Require Location: ${config.requireLocation}');
+        AppLogger.info('GameSetupBloc', 'Custom Weapons: ${config.customWeapons?.length ?? 0}');
+        AppLogger.info('GameSetupBloc', 'Custom Locations: ${config.customLocations?.length ?? 0}');
+        if (config.customWeapons != null && config.customWeapons!.isNotEmpty) {
+          AppLogger.debug('GameSetupBloc', 'Weapons: ${config.customWeapons!.take(3).join(", ")}...');
+        }
+        if (config.customLocations != null && config.customLocations!.isNotEmpty) {
+          AppLogger.debug('GameSetupBloc', 'Locations: ${config.customLocations!.take(3).join(", ")}...');
+        }
+
+        // FIX: Initialize weapons/locations if missing
+        var fixedConfig = config;
+        if (config.requireWeapon && (config.customWeapons == null || config.customWeapons!.isEmpty)) {
+          AppLogger.warning('GameSetupBloc', 'FIXING: Initializing weapons with defaults');
+          fixedConfig = fixedConfig.updateWeapons(GameConstants.defaultWeapons.toList());
+        }
+        if (config.requireLocation && (config.customLocations == null || config.customLocations!.isEmpty)) {
+          AppLogger.warning('GameSetupBloc', 'FIXING: Initializing locations with defaults');
+          fixedConfig = fixedConfig.updateLocations(GameConstants.defaultLocations.toList());
+        }
+        
+        // Save fixed config if it was updated
+        if (fixedConfig != config) {
+          AppLogger.info('GameSetupBloc', 'Saving fixed config to database');
+          await repository.saveConfig(fixedConfig);
+        }
+
         // Validate configuration
-        final validationResult = await validateGameConfigUseCase(config);
+        final validationResult = await validateGameConfigUseCase(fixedConfig);
         
         await validationResult.fold(
           (failure) async => emit(GameSetupError(failure.message)),
@@ -152,7 +222,7 @@ class GameSetupBloc extends Bloc<GameSetupEvent, GameSetupState> {
             }
 
             // Generate assignments
-            final assignmentsResult = await generateAssignments(config);
+            final assignmentsResult = await generateAssignments(fixedConfig);
             
             assignmentsResult.fold(
               (failure) => emit(GameSetupError(failure.message)),
@@ -165,7 +235,9 @@ class GameSetupBloc extends Bloc<GameSetupEvent, GameSetupState> {
                 
                 emit(GameSetupStarted(
                   game: game,
-                  players: config.players,
+                  players: fixedConfig.players,
+                  weapons: fixedConfig.customWeapons,
+                  locations: fixedConfig.customLocations,
                 ));
               },
             );
@@ -200,7 +272,13 @@ class GameSetupBloc extends Bloc<GameSetupEvent, GameSetupState> {
       (config) async {
         if (config == null) return;
 
-        final updatedConfig = config.toggleWeaponRequirement(event.requireWeapon);
+        var updatedConfig = config.toggleWeaponRequirement(event.requireWeapon);
+        
+        // Initialize with default weapons if enabling requirement and no weapons set
+        if (event.requireWeapon && (updatedConfig.customWeapons == null || updatedConfig.customWeapons!.isEmpty)) {
+          updatedConfig = updatedConfig.updateWeapons(GameConstants.defaultWeapons.toList());
+        }
+        
         final saveResult = await repository.saveConfig(updatedConfig);
 
         saveResult.fold(
@@ -228,7 +306,13 @@ class GameSetupBloc extends Bloc<GameSetupEvent, GameSetupState> {
       (config) async {
         if (config == null) return;
 
-        final updatedConfig = config.toggleLocationRequirement(event.requireLocation);
+        var updatedConfig = config.toggleLocationRequirement(event.requireLocation);
+        
+        // Initialize with default locations if enabling requirement and no locations set
+        if (event.requireLocation && (updatedConfig.customLocations == null || updatedConfig.customLocations!.isEmpty)) {
+          updatedConfig = updatedConfig.updateLocations(GameConstants.defaultLocations.toList());
+        }
+        
         final saveResult = await repository.saveConfig(updatedConfig);
 
         saveResult.fold(

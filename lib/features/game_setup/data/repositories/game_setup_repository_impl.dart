@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import '../../../../core/constants/game_constants.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
+import '../../../../core/utils/app_logger.dart';
 import '../../domain/entities/game_config.dart';
 import '../../domain/entities/player.dart';
 import '../../domain/repositories/game_setup_repository.dart';
@@ -47,7 +48,16 @@ class GameSetupRepositoryImpl implements GameSetupRepository {
       final config = currentConfig ?? GameConfigModel(
         playerModels: const [],
         createdAt: DateTime.now(),
+        requireWeapon: true,
+        requireLocation: true,
+        customWeapons: GameConstants.defaultWeapons.toList(),
+        customLocations: GameConstants.defaultLocations.toList(),
       );
+
+      AppLogger.debug('GameSetupRepo', 'addPlayer - Config created/loaded');
+      AppLogger.debug('GameSetupRepo', 'Current config is null: ${currentConfig == null}');
+      AppLogger.debug('GameSetupRepo', 'Weapons: ${config.customWeapons?.length ?? 0}');
+      AppLogger.debug('GameSetupRepo', 'Locations: ${config.customLocations?.length ?? 0}');
 
       // Validate
       if (config.hasPlayer(player.name)) {
@@ -60,6 +70,10 @@ class GameSetupRepositoryImpl implements GameSetupRepository {
 
       final updatedConfig = config.addPlayer(player);
       final model = GameConfigModel.fromEntity(updatedConfig);
+      
+      AppLogger.debug('GameSetupRepo', 'After addPlayer - Weapons: ${updatedConfig.customWeapons?.length ?? 0}');
+      AppLogger.debug('GameSetupRepo', 'After addPlayer - Locations: ${updatedConfig.customLocations?.length ?? 0}');
+      
       await localDataSource.saveConfig(model);
       
       return Right(updatedConfig);

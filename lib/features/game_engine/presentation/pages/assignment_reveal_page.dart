@@ -10,11 +10,15 @@ import '../bloc/assignment_reveal_state.dart';
 class AssignmentRevealPage extends StatelessWidget {
   final Game game;
   final List<Player> players;
+  final List<String>? weapons;
+  final List<String>? locations;
 
   const AssignmentRevealPage({
     super.key,
     required this.game,
     required this.players,
+    this.weapons,
+    this.locations,
   });
 
   @override
@@ -23,6 +27,8 @@ class AssignmentRevealPage extends StatelessWidget {
       create: (context) => AssignmentRevealBloc(
         game: game,
         players: players,
+        weapons: weapons,
+        locations: locations,
       )..add(const LoadAssignments()),
       child: const _AssignmentRevealView(),
     );
@@ -107,9 +113,9 @@ class _AssignmentRevealView extends StatelessWidget {
             padding: const EdgeInsets.all(24),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              childAspectRatio: 1.5,
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
+              mainAxisExtent: 120, // Fixed height instead of aspect ratio
             ),
             itemCount: state.players.length,
             itemBuilder: (context, index) {
@@ -138,7 +144,8 @@ class _AssignmentRevealView extends StatelessWidget {
             padding: const EdgeInsets.all(24),
             child: ElevatedButton(
               onPressed: () {
-                context.read<AssignmentRevealBloc>().add(const CompleteReveal());
+                // Navigate back to home page
+                Navigator.of(context).popUntil((route) => route.isFirst);
               },
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
@@ -148,7 +155,7 @@ class _AssignmentRevealView extends StatelessWidget {
                 backgroundColor: Colors.green,
               ),
               child: const Text(
-                'Comenzar Partida',
+                'Cerrar',
                 style: TextStyle(fontSize: 18),
               ),
             ),
@@ -247,35 +254,38 @@ class _PlayerCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 isRevealed ? Icons.check_circle : Icons.person,
-                size: 48,
+                size: 36,
                 color: isRevealed ? Colors.green : AppTheme.secondaryColor,
               ),
-              const SizedBox(height: 12),
-              Text(
-                player.name,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: isRevealed ? Colors.grey.shade600 : null,
-                  decoration: isRevealed ? TextDecoration.lineThrough : null,
+              const SizedBox(height: 8),
+              Flexible(
+                child: Text(
+                  player.name,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: isRevealed ? Colors.grey.shade600 : null,
+                    decoration: isRevealed ? TextDecoration.lineThrough : null,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
               if (isRevealed) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 Text(
                   'Revelado',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 10,
                     color: Colors.grey.shade600,
                   ),
                 ),

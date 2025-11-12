@@ -74,13 +74,17 @@ class GameSetupSuccess extends GameSetupState {
 class GameSetupStarted extends GameSetupState {
   final Game game;
   final List<Player> players;
+  final List<String>? weapons;
+  final List<String>? locations;
 
   const GameSetupStarted({
     required this.game,
     required this.players,
+    this.weapons,
+    this.locations,
   });
 
   @override
-  List<Object?> get props => [game, players];
+  List<Object?> get props => [game, players, weapons, locations];
 }
 
