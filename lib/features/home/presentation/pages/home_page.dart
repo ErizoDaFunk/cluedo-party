@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/config/route_names.dart';
 import '../../../../core/constants/game_constants.dart';
 
 class HomePage extends StatelessWidget {
@@ -46,7 +47,7 @@ class HomePage extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    Navigator.of(context).pushNamed('/game-setup');
+                    Navigator.of(context).pushNamed(RouteNames.gameSetup);
                   },
                   icon: const Icon(Icons.phone_android, size: 28),
                   label: const Text(
@@ -60,11 +61,13 @@ class HomePage extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               
-              // Multiplayer mode button (disabled)
+              // Multiplayer mode button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: null, // Disabled for now
+                  onPressed: () {
+                    Navigator.of(context).pushNamed(RouteNames.multiplayerSetup);
+                  },
                   icon: const Icon(Icons.devices, size: 28),
                   label: const Text(
                     'Modo Varios Dispositivos',
@@ -73,15 +76,6 @@ class HomePage extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 20),
                   ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Próximamente...',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
-                  fontStyle: FontStyle.italic,
                 ),
               ),
             ],
