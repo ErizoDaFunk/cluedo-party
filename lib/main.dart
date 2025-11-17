@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'core/config/routes.dart';
 import 'core/config/theme.dart';
 import 'core/constants/game_constants.dart';
@@ -13,6 +15,11 @@ import 'features/game_setup/data/models/player_model.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   
   // Initialize Hive
   await Hive.initFlutter();

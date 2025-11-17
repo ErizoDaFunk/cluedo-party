@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get_it/get_it.dart';
 import '../../features/game_data/data/datasources/custom_items_datasource.dart';
 import '../../features/game_data/data/datasources/default_items_datasource.dart';
@@ -13,11 +14,26 @@ import '../../features/game_setup/domain/usecases/add_player.dart';
 import '../../features/game_setup/domain/usecases/remove_player.dart';
 import '../../features/game_setup/domain/usecases/validate_game_config.dart';
 import '../../features/game_setup/presentation/bloc/game_setup_bloc.dart';
+import '../../features/multiplayer/data/datasources/firebase_room_datasource.dart';
+import '../../features/multiplayer/data/repositories/room_repository_impl.dart';
+import '../../features/multiplayer/domain/repositories/room_repository.dart';
+import '../../features/multiplayer/domain/usecases/create_room.dart';
+import '../../features/multiplayer/domain/usecases/join_room.dart';
+import '../../features/multiplayer/domain/usecases/start_game.dart';
+import '../../features/multiplayer/domain/usecases/sync_game_state.dart';
+import '../../features/multiplayer/presentation/bloc/room_bloc.dart';
 
 final getIt = GetIt.instance;
 
 /// Setup all dependencies for the app
 Future<void> setupDependencies() async {
+  // ============================================
+  // EXTERNAL
+  // ============================================
+  
+  // Firebase Firestore
+  getIt.registerLazySingleton(() => FirebaseFirestore.instance);
+
   // ============================================
   // DATA SOURCES
   // ============================================
@@ -34,6 +50,13 @@ Future<void> setupDependencies() async {
   // Game Setup
   getIt.registerLazySingleton<LocalGameDataSource>(
     () => LocalGameDataSource(),
+  );
+
+  // Multiplayer
+  getIt.registerLazySingleton<FirebaseRoomDataSource>(
+    () => FirebaseRoomDataSourceImpl(
+      firestore: getIt<FirebaseFirestore>(),
+    ),
   );
 
   // ============================================
@@ -55,6 +78,13 @@ Future<void> setupDependencies() async {
     ),
   );
 
+  // Multiplayer Repository
+  getIt.registerLazySingleton<RoomRepository>(
+    () => RoomRepositoryImpl(
+      dataSource: getIt<FirebaseRoomDataSource>(),
+    ),
+  );
+
   // ============================================
   // USE CASES
   // ============================================
@@ -71,6 +101,12 @@ Future<void> setupDependencies() async {
   // Game Engine Use Cases
   getIt.registerLazySingleton(() => GenerateAssignments());
 
+  // Multiplayer Use Cases
+  getIt.registerLazySingleton(() => CreateRoomUseCase(getIt<RoomRepository>()));
+  getIt.registerLazySingleton(() => JoinRoomUseCase(getIt<RoomRepository>()));
+  getIt.registerLazySingleton(() => WatchRoomUseCase(getIt<RoomRepository>()));
+  getIt.registerLazySingleton(() => StartGameUseCase(getIt<RoomRepository>()));
+
   // ============================================
   // BLoCs (Factories - new instance each time)
   // ============================================
@@ -82,6 +118,15 @@ Future<void> setupDependencies() async {
       removePlayerUseCase: getIt<RemovePlayer>(),
       validateGameConfigUseCase: getIt<ValidateGameConfig>(),
       generateAssignments: getIt<GenerateAssignments>(),
+    ),
+  );
+
+  getIt.registerFactory(
+    () => RoomBloc(
+      createRoomUseCase: getIt<CreateRoomUseCase>(),
+      joinRoomUseCase: getIt<JoinRoomUseCase>(),
+      watchRoomUseCase: getIt<WatchRoomUseCase>(),
+      startGameUseCase: getIt<StartGameUseCase>(),
     ),
   );
 }

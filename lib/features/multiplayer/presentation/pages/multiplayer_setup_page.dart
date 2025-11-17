@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../bloc/room_bloc.dart';
+import '../bloc/room_event.dart';
+import '../bloc/room_state.dart';
+import 'room_lobby_page.dart';
 
 class MultiplayerSetupPage extends StatefulWidget {
   const MultiplayerSetupPage({super.key});
@@ -26,10 +31,10 @@ class _MultiplayerSetupPageState extends State<MultiplayerSetupPage> {
       final roomCode = _roomCodeController.text.trim().toUpperCase();
       final playerName = _playerNameJoinController.text.trim();
       
-      // TODO: Implement join game logic
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Uniéndose a sala $roomCode como $playerName')),
-      );
+      context.read<RoomBloc>().add(JoinRoomEvent(
+        roomCode: roomCode,
+        playerName: playerName,
+      ));
     }
   }
 
@@ -43,10 +48,7 @@ class _MultiplayerSetupPageState extends State<MultiplayerSetupPage> {
 
     final playerName = _playerNameCreateController.text.trim();
     
-    // TODO: Implement create room logic
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Creando sala como $playerName')),
-    );
+    context.read<RoomBloc>().add(CreateRoomEvent(playerName));
   }
 
   @override
@@ -55,174 +57,207 @@ class _MultiplayerSetupPageState extends State<MultiplayerSetupPage> {
       appBar: AppBar(
         title: const Text('Modo Multijugador'),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Join existing game section
-                Card(
-                  elevation: 4,
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.login,
-                              color: Theme.of(context).primaryColor,
-                              size: 28,
-                            ),
-                            const SizedBox(width: 12),
-                            const Text(
-                              'Unirse a una Partida',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        TextFormField(
-                          controller: _roomCodeController,
-                          decoration: const InputDecoration(
-                            labelText: 'Código de Sala',
-                            hintText: 'Ej: ABC123',
-                            prefixIcon: Icon(Icons.meeting_room),
-                            border: OutlineInputBorder(),
-                          ),
-                          textCapitalization: TextCapitalization.characters,
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Introduce el código de sala';
-                            }
-                            if (value.trim().length < 4) {
-                              return 'Código inválido';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _playerNameJoinController,
-                          decoration: const InputDecoration(
-                            labelText: 'Tu Nombre',
-                            hintText: 'Nombre del jugador',
-                            prefixIcon: Icon(Icons.person),
-                            border: OutlineInputBorder(),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Introduce tu nombre';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 20),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: _joinGame,
-                            icon: const Icon(Icons.login),
-                            label: const Text(
-                              'Unirse al Juego',
-                              style: TextStyle(fontSize: 16),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+      body: BlocListener<RoomBloc, RoomState>(
+        listener: (context, state) {
+          if (state is RoomError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
+              ),
+            );
+          } else if (state is RoomCreated || state is RoomJoined) {
+            // Navigate to lobby - capture bloc reference before navigation
+            final roomBloc = BlocProvider.of<RoomBloc>(context);
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => BlocProvider.value(
+                  value: roomBloc,
+                  child: const RoomLobbyPage(),
                 ),
-                
-                const SizedBox(height: 32),
-                
-                // Divider with text
-                Row(
-                  children: [
-                    Expanded(child: Divider(color: Colors.grey[400])),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'O',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.bold,
+              ),
+            );
+          }
+        },
+        child: BlocBuilder<RoomBloc, RoomState>(
+          builder: (context, state) {
+            if (state is RoomLoading) {
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            }
+
+            return SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Join existing game section
+                      Card(
+                        elevation: 4,
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.login,
+                                    color: Theme.of(context).primaryColor,
+                                    size: 28,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Text(
+                                    'Unirse a una Partida',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 20),
+                              TextFormField(
+                                controller: _roomCodeController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Código de Sala',
+                                  hintText: 'Ej: ABC123',
+                                  prefixIcon: Icon(Icons.meeting_room),
+                                  border: OutlineInputBorder(),
+                                ),
+                                textCapitalization: TextCapitalization.characters,
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Introduce el código de sala';
+                                  }
+                                  if (value.trim().length < 4) {
+                                    return 'Código inválido';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                              TextFormField(
+                                controller: _playerNameJoinController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Tu Nombre',
+                                  hintText: 'Nombre del jugador',
+                                  prefixIcon: Icon(Icons.person),
+                                  border: OutlineInputBorder(),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Introduce tu nombre';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 20),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  onPressed: _joinGame,
+                                  icon: const Icon(Icons.login),
+                                  label: const Text(
+                                    'Unirse al Juego',
+                                    style: TextStyle(fontSize: 16),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    Expanded(child: Divider(color: Colors.grey[400])),
-                  ],
-                ),
-                
-                const SizedBox(height: 32),
-                
-                // Create new room section
-                Card(
-                  elevation: 4,
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.add_circle,
-                              color: Theme.of(context).primaryColor,
-                              size: 28,
-                            ),
-                            const SizedBox(width: 12),
-                            const Text(
-                              'Crear Nueva Sala',
+                      
+                      const SizedBox(height: 32),
+                      
+                      // Divider with text
+                      Row(
+                        children: [
+                          Expanded(child: Divider(color: Colors.grey[400])),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              'O',
                               style: TextStyle(
-                                fontSize: 20,
+                                color: Colors.grey[600],
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        TextFormField(
-                          controller: _playerNameCreateController,
-                          decoration: const InputDecoration(
-                            labelText: 'Tu Nombre',
-                            hintText: 'Nombre del anfitrión',
-                            prefixIcon: Icon(Icons.person),
-                            border: OutlineInputBorder(),
+                          ),
+                          Expanded(child: Divider(color: Colors.grey[400])),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 32),
+                      
+                      // Create new room section
+                      Card(
+                        elevation: 4,
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.add_circle,
+                                    color: Theme.of(context).primaryColor,
+                                    size: 28,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Text(
+                                    'Crear Nueva Sala',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 20),
+                              TextFormField(
+                                controller: _playerNameCreateController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Tu Nombre',
+                                  hintText: 'Nombre del anfitrión',
+                                  prefixIcon: Icon(Icons.person),
+                                  border: OutlineInputBorder(),
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  onPressed: _createRoom,
+                                  icon: const Icon(Icons.add),
+                                  label: const Text(
+                                    'Crear Sala',
+                                    style: TextStyle(fontSize: 16),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 20),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: _createRoom,
-                            icon: const Icon(Icons.add),
-                            label: const Text(
-                              'Crear Sala',
-                              style: TextStyle(fontSize: 16),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         ),
       ),
     );

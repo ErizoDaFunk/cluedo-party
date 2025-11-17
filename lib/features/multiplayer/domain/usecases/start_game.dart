@@ -3,12 +3,12 @@ import '../../../../core/errors/failures.dart';
 import '../entities/room.dart';
 import '../repositories/room_repository.dart';
 
-class WatchRoomUseCase {
+class StartGameUseCase {
   final RoomRepository repository;
 
-  WatchRoomUseCase(this.repository);
+  StartGameUseCase(this.repository);
 
-  Stream<Either<Failure, Room>> call(String roomCode) {
-    return repository.watchRoom(roomCode);
+  Future<Either<Failure, Room>> call(String roomCode) async {
+    return await repository.startGame(roomCode);
   }
 }

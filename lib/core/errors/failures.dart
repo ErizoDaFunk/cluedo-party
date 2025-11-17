@@ -26,6 +26,10 @@ class NetworkFailure extends Failure {
       : super(message);
 }
 
+class NotFoundFailure extends Failure {
+  const NotFoundFailure({String message = 'Recurso no encontrado'}) : super(message);
+}
+
 // Game-specific failures
 class InvalidPlayerCountFailure extends Failure {
   const InvalidPlayerCountFailure(
