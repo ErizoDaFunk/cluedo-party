@@ -67,13 +67,15 @@ class _MultiplayerSetupPageState extends State<MultiplayerSetupPage> {
               ),
             );
           } else if (state is RoomCreated || state is RoomJoined) {
-            // Navigate to lobby - capture bloc reference before navigation
-            final roomBloc = BlocProvider.of<RoomBloc>(context);
+            // Navigate to lobby with roomCode and playerId
+            final roomCode = state is RoomCreated ? state.room.code : (state as RoomJoined).room.code;
+            final playerId = state is RoomCreated ? state.playerId : (state as RoomJoined).playerId;
+            
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
-                builder: (_) => BlocProvider.value(
-                  value: roomBloc,
-                  child: const RoomLobbyPage(),
+                builder: (_) => RoomLobbyPage(
+                  roomCode: roomCode,
+                  playerId: playerId,
                 ),
               ),
             );

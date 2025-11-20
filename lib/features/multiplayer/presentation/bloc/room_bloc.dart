@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
+import '../../../../core/errors/failures.dart';
+import '../../domain/entities/room.dart';
 import '../../domain/usecases/create_room.dart';
 import '../../domain/usecases/join_room.dart';
 import '../../domain/usecases/start_game.dart';
@@ -16,7 +19,7 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
   
   final _uuid = const Uuid();
   String? _currentPlayerId;
-  StreamSubscription? _roomSubscription;
+  StreamSubscription<Either<Failure, Room>>? _roomSubscription;
 
   RoomBloc({
     required this.createRoomUseCase,
@@ -27,6 +30,7 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
     on<CreateRoomEvent>(_onCreateRoom);
     on<JoinRoomEvent>(_onJoinRoom);
     on<WatchRoomEvent>(_onWatchRoom);
+    on<RoomDataReceived>(_onRoomDataReceived);
     on<StartGameEvent>(_onStartGame);
     on<LeaveRoomEvent>(_onLeaveRoom);
   }
@@ -82,22 +86,49 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
     WatchRoomEvent event,
     Emitter<RoomState> emit,
   ) async {
+    print('🔵 [RoomBloc] Starting to watch room: ${event.roomCode}');
     await _roomSubscription?.cancel();
-
-    await emit.forEach(
-      watchRoomUseCase(event.roomCode),
-      onData: (result) {
-        return result.fold(
-          (failure) => const RoomInitial(),
-          (room) {
-            if (_currentPlayerId != null) {
-              return RoomUpdated(room, _currentPlayerId!);
+    
+    _roomSubscription = watchRoomUseCase(event.roomCode).listen(
+      (result) {
+        print('🟢 [RoomBloc] Stream emitted data');
+        result.fold(
+          (failure) {
+            print('🔴 [RoomBloc] Error from stream: ${failure.message}');
+            if (!isClosed) {
+              add(const LeaveRoomEvent());
             }
-            return const RoomInitial();
+          },
+          (room) {
+            print('🟢 [RoomBloc] Got room data, adding internal event');
+            if (!isClosed) {
+              add(RoomDataReceived(room));
+            }
           },
         );
       },
+      onError: (error) {
+        print('🔴 [RoomBloc] Stream error: $error');
+      },
     );
+  }
+
+  Future<void> _onRoomDataReceived(
+    RoomDataReceived event,
+    Emitter<RoomState> emit,
+  ) async {
+    final room = event.room;
+    print('🟢 [RoomBloc] Processing room data - Players: ${room.players.length}, Status: ${room.status}');
+    room.players.forEach((id, player) {
+      print('  👤 Player: ${player.name} (${player.isHost ? "HOST" : "member"})');
+    });
+    
+    if (_currentPlayerId != null) {
+      print('🟢 [RoomBloc] Emitting RoomUpdated state');
+      emit(RoomUpdated(room, _currentPlayerId!));
+    } else {
+      print('⚠️ [RoomBloc] No current player ID');
+    }
   }
 
   Future<void> _onStartGame(

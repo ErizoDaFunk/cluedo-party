@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../domain/entities/room.dart';
 
 abstract class RoomEvent extends Equatable {
   const RoomEvent();
@@ -49,4 +50,14 @@ class StartGameEvent extends RoomEvent {
 
 class LeaveRoomEvent extends RoomEvent {
   const LeaveRoomEvent();
+}
+
+// Internal event for stream updates
+class RoomDataReceived extends RoomEvent {
+  final Room room;
+
+  const RoomDataReceived(this.room);
+
+  @override
+  List<Object?> get props => [room];
 }
