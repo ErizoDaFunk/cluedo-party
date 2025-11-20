@@ -6,7 +6,6 @@ import '../../domain/entities/room.dart';
 import '../../domain/usecases/sync_game_state.dart';
 import '../bloc/room_bloc.dart';
 import '../bloc/room_event.dart';
-import '../bloc/room_state.dart';
 
 class RoomLobbyPage extends StatefulWidget {
   final String roomCode;
@@ -40,7 +39,7 @@ class _RoomLobbyPageState extends State<RoomLobbyPage> {
       body: StreamBuilder(
         stream: _watchRoomUseCase(widget.roomCode),
         builder: (context, snapshot) {
-          print('🎯 [RoomLobby] StreamBuilder - hasData: ${snapshot.hasData}');
+          print('[RoomLobby] StreamBuilder - hasData: ${snapshot.hasData}');
           
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -59,7 +58,7 @@ class _RoomLobbyPageState extends State<RoomLobbyPage> {
               );
             },
             (room) {
-              print('🎯 [RoomLobby] Rendering ${room.players.length} players');
+              print('[RoomLobby] Rendering ${room.players.length} players');
               
               final isHost = room.hostId == widget.playerId;
               final playersList = room.players.values.toList();

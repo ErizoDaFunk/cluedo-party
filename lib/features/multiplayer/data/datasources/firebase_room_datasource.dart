@@ -56,22 +56,22 @@ class FirebaseRoomDataSourceImpl implements FirebaseRoomDataSource {
 
   @override
   Stream<Either<Failure, RoomModel>> watchRoom(String code) {
-    print('🔷 [Datasource] Setting up Firestore listener for room: $code');
+    print('[Datasource] Setting up Firestore listener for room: $code');
     return firestore.collection(_collection).doc(code).snapshots().map((doc) {
-      print('🔷 [Datasource] Snapshot received - exists: ${doc.exists}');
+      print('[Datasource] Snapshot received - exists: ${doc.exists}');
       try {
         if (!doc.exists) {
-          print('🔴 [Datasource] Room not found!');
+          print('[Datasource] Room not found!');
           return Left(NotFoundFailure(message: 'Sala no encontrada'));
         }
         final roomModel = RoomModel.fromFirestore(doc);
-        print('🔷 [Datasource] Room parsed - ${roomModel.players.length} players');
+        print('[Datasource] Room parsed - ${roomModel.players.length} players');
         roomModel.players.forEach((id, player) {
-          print('  👤 [Datasource] Player: ${player.name}');
+          print('  [Datasource] Player: ${player.name}');
         });
         return Right(roomModel);
       } catch (e) {
-        print('🔴 [Datasource] Error: $e');
+        print('[Datasource] Error: $e');
         return Left(ServerFailure('Error observando sala: $e'));
       }
     });

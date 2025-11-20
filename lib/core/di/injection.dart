@@ -125,7 +125,6 @@ Future<void> setupDependencies() async {
     () => RoomBloc(
       createRoomUseCase: getIt<CreateRoomUseCase>(),
       joinRoomUseCase: getIt<JoinRoomUseCase>(),
-      watchRoomUseCase: getIt<WatchRoomUseCase>(),
       startGameUseCase: getIt<StartGameUseCase>(),
     ),
   );
