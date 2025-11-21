@@ -7,6 +7,7 @@ class Room extends Equatable {
   final RoomStatus status;
   final DateTime createdAt;
   final Map<String, RoomPlayer> players;
+  final GameSettings settings;
 
   const Room({
     required this.code,
@@ -14,6 +15,7 @@ class Room extends Equatable {
     required this.status,
     required this.createdAt,
     required this.players,
+    required this.settings,
   });
 
   bool get isWaiting => status == RoomStatus.waiting;
@@ -28,6 +30,7 @@ class Room extends Equatable {
     RoomStatus? status,
     DateTime? createdAt,
     Map<String, RoomPlayer>? players,
+    GameSettings? settings,
   }) {
     return Room(
       code: code ?? this.code,
@@ -35,11 +38,12 @@ class Room extends Equatable {
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       players: players ?? this.players,
+      settings: settings ?? this.settings,
     );
   }
 
   @override
-  List<Object?> get props => [code, hostId, status, createdAt, players];
+  List<Object?> get props => [code, hostId, status, createdAt, players, settings];
 }
 
 /// Entity representing a player in a room
@@ -87,4 +91,74 @@ enum RoomStatus {
   waiting,
   playing,
   finished,
+}
+
+/// Game settings entity
+class GameSettings extends Equatable {
+  final bool requireWeapon;
+  final bool requireLocation;
+  final List<String> availableWeapons;
+  final List<String> availableLocations;
+  final KillVerification killVerification;
+
+  const GameSettings({
+    this.requireWeapon = false,
+    this.requireLocation = false,
+    this.availableWeapons = const [],
+    this.availableLocations = const [],
+    this.killVerification = const KillVerification(),
+  });
+
+  GameSettings copyWith({
+    bool? requireWeapon,
+    bool? requireLocation,
+    List<String>? availableWeapons,
+    List<String>? availableLocations,
+    KillVerification? killVerification,
+  }) {
+    return GameSettings(
+      requireWeapon: requireWeapon ?? this.requireWeapon,
+      requireLocation: requireLocation ?? this.requireLocation,
+      availableWeapons: availableWeapons ?? this.availableWeapons,
+      availableLocations: availableLocations ?? this.availableLocations,
+      killVerification: killVerification ?? this.killVerification,
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+        requireWeapon,
+        requireLocation,
+        availableWeapons,
+        availableLocations,
+        killVerification,
+      ];
+}
+
+/// Kill verification settings
+class KillVerification extends Equatable {
+  final bool hostVerifies;
+  final bool killerVerifies;
+  final bool victimVerifies;
+
+  const KillVerification({
+    this.hostVerifies = false,
+    this.killerVerifies = true,
+    this.victimVerifies = false,
+  });
+
+  KillVerification copyWith({
+    bool? hostVerifies,
+    bool? killerVerifies,
+    bool? victimVerifies,
+  }) {
+    return KillVerification(
+      hostVerifies: hostVerifies ?? this.hostVerifies,
+      killerVerifies: killerVerifies ?? this.killerVerifies,
+      victimVerifies: victimVerifies ?? this.victimVerifies,
+    );
+  }
+
+  @override
+  List<Object?> get props => [hostVerifies, killerVerifies, victimVerifies];
 }

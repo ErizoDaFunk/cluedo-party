@@ -36,6 +36,7 @@ class RoomRepositoryImpl implements RoomRepository {
         status: 'waiting',
         createdAt: DateTime.now(),
         players: {playerId: hostPlayer},
+        settings: const GameSettingsModel(), // Default settings
       );
 
       final result = await dataSource.createRoom(room);
@@ -213,6 +214,21 @@ class RoomRepositoryImpl implements RoomRepository {
       );
     } catch (e) {
       return Left(ServerFailure('Error iniciando juego: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> updateGameSettings({
+    required String roomCode,
+    required GameSettings settings,
+  }) async {
+    try {
+      final settingsModel = GameSettingsModel.fromEntity(settings);
+      return await dataSource.updateRoom(roomCode, {
+        'settings': settingsModel.toMap(),
+      });
+    } catch (e) {
+      return Left(ServerFailure('Error actualizando configuración: $e'));
     }
   }
 

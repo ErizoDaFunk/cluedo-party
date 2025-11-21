@@ -52,4 +52,10 @@ abstract class RoomRepository {
 
   /// Start game (assign targets)
   Future<Either<Failure, Room>> startGame(String roomCode);
+
+  /// Update game settings
+  Future<Either<Failure, void>> updateGameSettings({
+    required String roomCode,
+    required GameSettings settings,
+  });
 }

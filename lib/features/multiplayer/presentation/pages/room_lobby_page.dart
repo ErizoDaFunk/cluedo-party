@@ -4,8 +4,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection.dart';
 import '../../domain/entities/room.dart';
 import '../../domain/usecases/sync_game_state.dart';
+import '../../domain/usecases/update_game_settings.dart';
 import '../bloc/room_bloc.dart';
 import '../bloc/room_event.dart';
+import '../widgets/game_settings_dialog.dart';
 
 class RoomLobbyPage extends StatefulWidget {
   final String roomCode;
@@ -23,6 +25,22 @@ class RoomLobbyPage extends StatefulWidget {
 
 class _RoomLobbyPageState extends State<RoomLobbyPage> {
   final WatchRoomUseCase _watchRoomUseCase = getIt<WatchRoomUseCase>();
+  final UpdateGameSettingsUseCase _updateGameSettingsUseCase = getIt<UpdateGameSettingsUseCase>();
+
+  void _showSettingsDialog(GameSettings currentSettings) {
+    showDialog(
+      context: context,
+      builder: (context) => GameSettingsDialog(
+        initialSettings: currentSettings,
+        onSave: (settings) async {
+          await _updateGameSettingsUseCase(
+            roomCode: widget.roomCode,
+            settings: settings,
+          );
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -124,7 +142,80 @@ class _RoomLobbyPageState extends State<RoomLobbyPage> {
                         ),
                       ),
 
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
+
+                      // Game Settings Card
+                      Card(
+                        elevation: 2,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Configuración',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  if (isHost)
+                                    IconButton(
+                                      icon: const Icon(Icons.edit),
+                                      onPressed: () => _showSettingsDialog(room.settings),
+                                      tooltip: 'Editar configuración',
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              _buildSettingRow(
+                                icon: Icons.gavel,
+                                label: 'Arma requerida',
+                                value: room.settings.requireWeapon ? 'Sí' : 'No',
+                              ),
+                              if (room.settings.requireWeapon && room.settings.availableWeapons.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 40, top: 4),
+                                  child: Text(
+                                    room.settings.availableWeapons.join(', '),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ),
+                              const SizedBox(height: 4),
+                              _buildSettingRow(
+                                icon: Icons.location_on,
+                                label: 'Lugar requerido',
+                                value: room.settings.requireLocation ? 'Sí' : 'No',
+                              ),
+                              if (room.settings.requireLocation && room.settings.availableLocations.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 40, top: 4),
+                                  child: Text(
+                                    room.settings.availableLocations.join(', '),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ),
+                              const SizedBox(height: 4),
+                              _buildSettingRow(
+                                icon: Icons.verified_user,
+                                label: 'Verificación',
+                                value: _getVerificationText(room.settings.killVerification),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
 
                       // Players list
                       Text(
@@ -282,5 +373,36 @@ class _RoomLobbyPageState extends State<RoomLobbyPage> {
         },
       ),
     );
+  }
+
+  Widget _buildSettingRow({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: Colors.grey[700]),
+        const SizedBox(width: 8),
+        Text(label, style: const TextStyle(fontSize: 14)),
+        const Spacer(),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _getVerificationText(KillVerification verification) {
+    final List<String> verifiers = [];
+    if (verification.hostVerifies) verifiers.add('Host');
+    if (verification.killerVerifies) verifiers.add('Asesino');
+    if (verification.victimVerifies) verifiers.add('Víctima');
+    
+    return verifiers.isEmpty ? 'Ninguna' : verifiers.join(', ');
   }
 }
