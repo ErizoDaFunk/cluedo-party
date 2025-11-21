@@ -275,6 +275,88 @@ class RoomRepositoryImpl implements RoomRepository {
     }
   }
 
+  @override
+  Future<Either<Failure, void>> reportKill({
+    required String roomCode,
+    required String killerId,
+    required String victimId,
+  }) async {
+    try {
+      print('[Repository] Reporting kill - Killer: $killerId, Victim: $victimId');
+      
+      // Get current room
+      final roomResult = await dataSource.getRoomByCode(roomCode);
+      
+      return await roomResult.fold(
+        (failure) async => Left(failure),
+        (roomModel) async {
+          final killer = roomModel.players[killerId];
+          final victim = roomModel.players[victimId];
+
+          if (killer == null) {
+            return Left(ServerFailure('Asesino no encontrado'));
+          }
+          if (victim == null) {
+            return Left(ServerFailure('Víctima no encontrada'));
+          }
+          if (!victim.isAlive) {
+            return Left(ServerFailure('La víctima ya está muerta'));
+          }
+          if (killer.targetId != victimId) {
+            return Left(ServerFailure('No puedes matar a alguien que no es tu objetivo'));
+          }
+
+          print('[Repository] Kill validated - updating players');
+
+          // Update victim: mark as dead
+          final updatedVictim = RoomPlayerModel(
+            id: victim.id,
+            name: victim.name,
+            isAlive: false,
+            targetId: victim.targetId,
+            killCount: victim.killCount,
+            isHost: victim.isHost,
+            assignedWeapon: victim.assignedWeapon,
+            assignedLocation: victim.assignedLocation,
+          );
+
+          // Update killer: increment kills, inherit victim's target
+          final updatedKiller = RoomPlayerModel(
+            id: killer.id,
+            name: killer.name,
+            isAlive: killer.isAlive,
+            targetId: victim.targetId, // Inherit victim's target
+            killCount: killer.killCount + 1,
+            isHost: killer.isHost,
+            assignedWeapon: killer.assignedWeapon,
+            assignedLocation: killer.assignedLocation,
+          );
+
+          final updatedPlayers = Map<String, RoomPlayerModel>.from(roomModel.players);
+          updatedPlayers[killerId] = updatedKiller;
+          updatedPlayers[victimId] = updatedVictim;
+
+          // Check if game should end (only 1 player alive)
+          final alivePlayers = updatedPlayers.values.where((p) => p.isAlive).length;
+          final shouldFinish = alivePlayers <= 1;
+
+          print('[Repository] Alive players: $alivePlayers, Game ending: $shouldFinish');
+
+          final updateData = {
+            'players': updatedPlayers.map((key, value) => MapEntry(key, value.toMap())),
+            if (shouldFinish) 'status': 'finished',
+          };
+
+          return await dataSource.updateRoom(roomCode, updateData);
+        },
+      );
+    } catch (e, stackTrace) {
+      print('[Repository] Exception reporting kill: $e');
+      print('[Repository] Stack trace: $stackTrace');
+      return Left(ServerFailure('Error reportando asesinato: $e'));
+    }
+  }
+
   /// Generate a random 6-character room code
   String _generateRoomCode() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';

@@ -21,6 +21,7 @@ import '../../features/multiplayer/domain/usecases/create_room.dart';
 import '../../features/multiplayer/domain/usecases/join_room.dart';
 import '../../features/multiplayer/domain/usecases/start_game.dart';
 import '../../features/multiplayer/domain/usecases/update_game_settings.dart';
+import '../../features/multiplayer/domain/usecases/report_kill.dart';
 import '../../features/multiplayer/domain/usecases/sync_game_state.dart';
 import '../../features/multiplayer/presentation/bloc/room_bloc.dart';
 
@@ -108,6 +109,7 @@ Future<void> setupDependencies() async {
   getIt.registerLazySingleton(() => WatchRoomUseCase(getIt<RoomRepository>()));
   getIt.registerLazySingleton(() => StartGameUseCase(getIt<RoomRepository>()));
   getIt.registerLazySingleton(() => UpdateGameSettingsUseCase(getIt<RoomRepository>()));
+  getIt.registerLazySingleton(() => ReportKillUseCase(getIt<RoomRepository>()));
 
   // ============================================
   // BLoCs (Factories - new instance each time)

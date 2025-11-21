@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/di/injection.dart';
 import '../../domain/entities/room.dart';
 import '../../domain/usecases/sync_game_state.dart';
+import '../../domain/usecases/report_kill.dart';
 
 class ActiveGamePage extends StatefulWidget {
   final String roomCode;
@@ -19,6 +20,7 @@ class ActiveGamePage extends StatefulWidget {
 
 class _ActiveGamePageState extends State<ActiveGamePage> {
   final WatchRoomUseCase _watchRoomUseCase = getIt<WatchRoomUseCase>();
+  final ReportKillUseCase _reportKillUseCase = getIt<ReportKillUseCase>();
 
   @override
   Widget build(BuildContext context) {
@@ -436,13 +438,56 @@ class _ActiveGamePageState extends State<ActiveGamePage> {
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.of(context).pop();
-              // TODO: Implement kill verification use case
+              
+              // Show loading
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Funcionalidad de asesinato próximamente...'),
+                  content: Row(
+                    children: [
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Text('Reportando asesinato...'),
+                    ],
+                  ),
+                  duration: Duration(seconds: 2),
                 ),
+              );
+
+              // Report kill
+              final result = await _reportKillUseCase(
+                roomCode: widget.roomCode,
+                killerId: widget.playerId,
+                victimId: victim.id,
+              );
+
+              if (!context.mounted) return;
+
+              result.fold(
+                (failure) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(failure.message),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                },
+                (_) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('¡${victim.name} ha sido eliminado!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                },
               );
             },
             style: ElevatedButton.styleFrom(

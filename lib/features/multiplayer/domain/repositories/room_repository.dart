@@ -58,4 +58,11 @@ abstract class RoomRepository {
     required String roomCode,
     required GameSettings settings,
   });
+
+  /// Report a kill (killer eliminates victim)
+  Future<Either<Failure, void>> reportKill({
+    required String roomCode,
+    required String killerId,
+    required String victimId,
+  });
 }
