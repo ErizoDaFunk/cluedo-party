@@ -73,11 +73,19 @@ class RoomBloc extends Bloc<RoomEvent, RoomState> {
     StartGameEvent event,
     Emitter<RoomState> emit,
   ) async {
+    print('[RoomBloc] StartGameEvent received for room: ${event.roomCode}');
+    
     final result = await startGameUseCase(event.roomCode);
 
     result.fold(
-      (failure) => emit(RoomError(failure.message)),
-      (_) {}, // Room will be updated via StreamBuilder in UI
+      (failure) {
+        print('[RoomBloc] StartGame failed: ${failure.message}');
+        emit(RoomError(failure.message));
+      },
+      (_) {
+        print('[RoomBloc] StartGame succeeded');
+        // Room will be updated via StreamBuilder in UI
+      },
     );
   }
 

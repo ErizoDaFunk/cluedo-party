@@ -164,17 +164,26 @@ class RoomRepositoryImpl implements RoomRepository {
   @override
   Future<Either<Failure, Room>> startGame(String roomCode) async {
     try {
+      print('[Repository] Starting game for room: $roomCode');
       // Get current room
       final roomResult = await dataSource.getRoomByCode(roomCode);
       
       return await roomResult.fold(
-        (failure) async => Left(failure),
+        (failure) async {
+          print('[Repository] Failed to get room: ${failure.message}');
+          return Left(failure);
+        },
         (roomModel) async {
+          print('[Repository] Got room, players: ${roomModel.players.length}');
+          
           // Check minimum players
           if (roomModel.players.length < 3) {
             return Left(InvalidPlayerCountFailure('Se necesitan al menos 3 jugadores'));
           }
 
+          final settings = roomModel.settings.toEntity();
+          print('[Repository] Settings loaded - requireWeapon: ${settings.requireWeapon}, requireLocation: ${settings.requireLocation}');
+          
           // Assign targets in a circle
           final playerIds = roomModel.players.keys.toList()..shuffle();
           final updatedPlayers = <String, RoomPlayerModel>{};
@@ -184,6 +193,24 @@ class RoomRepositoryImpl implements RoomRepository {
             final targetId = playerIds[(i + 1) % playerIds.length];
             final player = roomModel.players[playerId]!;
 
+            // Assign weapon if required
+            String? assignedWeapon;
+            if (settings.requireWeapon && settings.availableWeapons.isNotEmpty) {
+              assignedWeapon = settings.availableWeapons[
+                Random().nextInt(settings.availableWeapons.length)
+              ];
+              print('[Repository] Assigned weapon "$assignedWeapon" to ${player.name}');
+            }
+
+            // Assign location if required
+            String? assignedLocation;
+            if (settings.requireLocation && settings.availableLocations.isNotEmpty) {
+              assignedLocation = settings.availableLocations[
+                Random().nextInt(settings.availableLocations.length)
+              ];
+              print('[Repository] Assigned location "$assignedLocation" to ${player.name}');
+            }
+
             updatedPlayers[playerId] = RoomPlayerModel(
               id: player.id,
               name: player.name,
@@ -191,9 +218,13 @@ class RoomRepositoryImpl implements RoomRepository {
               targetId: targetId,
               killCount: 0,
               isHost: player.isHost,
+              assignedWeapon: assignedWeapon,
+              assignedLocation: assignedLocation,
             );
           }
 
+          print('[Repository] Updating room with ${updatedPlayers.length} players');
+          
           // Update room
           final updateResult = await dataSource.updateRoom(roomCode, {
             'status': 'playing',
@@ -201,18 +232,30 @@ class RoomRepositoryImpl implements RoomRepository {
           });
 
           return await updateResult.fold(
-            (failure) => Left(failure),
+            (failure) {
+              print('[Repository] Failed to update room: ${failure.message}');
+              return Left(failure);
+            },
             (_) async {
+              print('[Repository] Room updated, fetching updated data');
               final updatedResult = await dataSource.getRoomByCode(roomCode);
               return updatedResult.fold(
-                (failure) => Left(failure),
-                (updatedRoom) => Right(updatedRoom.toEntity()),
+                (failure) {
+                  print('[Repository] Failed to fetch updated room: ${failure.message}');
+                  return Left(failure);
+                },
+                (updatedRoom) {
+                  print('[Repository] Game started successfully');
+                  return Right(updatedRoom.toEntity());
+                },
               );
             },
           );
         },
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('[Repository] Exception starting game: $e');
+      print('[Repository] Stack trace: $stackTrace');
       return Left(ServerFailure('Error iniciando juego: $e'));
     }
   }

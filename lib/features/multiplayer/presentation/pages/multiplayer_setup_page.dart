@@ -70,12 +70,16 @@ class _MultiplayerSetupPageState extends State<MultiplayerSetupPage> {
             // Navigate to lobby with roomCode and playerId
             final roomCode = state is RoomCreated ? state.room.code : (state as RoomJoined).room.code;
             final playerId = state is RoomCreated ? state.playerId : (state as RoomJoined).playerId;
+            final roomBloc = context.read<RoomBloc>();
             
-            Navigator.of(context).pushReplacement(
+            Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => RoomLobbyPage(
-                  roomCode: roomCode,
-                  playerId: playerId,
+                builder: (_) => BlocProvider.value(
+                  value: roomBloc,
+                  child: RoomLobbyPage(
+                    roomCode: roomCode,
+                    playerId: playerId,
+                  ),
                 ),
               ),
             );

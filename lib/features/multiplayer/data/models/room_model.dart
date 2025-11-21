@@ -116,6 +116,8 @@ class RoomPlayerModel {
   final String? targetId;
   final int killCount;
   final bool isHost;
+  final String? assignedWeapon;
+  final String? assignedLocation;
 
   const RoomPlayerModel({
     required this.id,
@@ -124,6 +126,8 @@ class RoomPlayerModel {
     this.targetId,
     required this.killCount,
     required this.isHost,
+    this.assignedWeapon,
+    this.assignedLocation,
   });
 
   /// Convert from Map to RoomPlayerModel
@@ -135,6 +139,8 @@ class RoomPlayerModel {
       targetId: map['targetId'] as String?,
       killCount: map['killCount'] as int? ?? 0,
       isHost: map['isHost'] as bool? ?? false,
+      assignedWeapon: map['assignedWeapon'] as String?,
+      assignedLocation: map['assignedLocation'] as String?,
     );
   }
 
@@ -147,6 +153,8 @@ class RoomPlayerModel {
       'targetId': targetId,
       'killCount': killCount,
       'isHost': isHost,
+      'assignedWeapon': assignedWeapon,
+      'assignedLocation': assignedLocation,
     };
   }
 
@@ -159,6 +167,8 @@ class RoomPlayerModel {
       targetId: player.targetId,
       killCount: player.killCount,
       isHost: player.isHost,
+      assignedWeapon: player.assignedWeapon,
+      assignedLocation: player.assignedLocation,
     );
   }
 
@@ -171,6 +181,8 @@ class RoomPlayerModel {
       targetId: targetId,
       killCount: killCount,
       isHost: isHost,
+      assignedWeapon: assignedWeapon,
+      assignedLocation: assignedLocation,
     );
   }
 }

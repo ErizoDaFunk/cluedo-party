@@ -8,6 +8,7 @@ import '../../domain/usecases/update_game_settings.dart';
 import '../bloc/room_bloc.dart';
 import '../bloc/room_event.dart';
 import '../widgets/game_settings_dialog.dart';
+import 'active_game_page.dart';
 
 class RoomLobbyPage extends StatefulWidget {
   final String roomCode;
@@ -44,6 +45,9 @@ class _RoomLobbyPageState extends State<RoomLobbyPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Get RoomBloc before StreamBuilder to avoid context issues
+    final roomBloc = context.read<RoomBloc>();
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Sala de Espera'),
@@ -315,9 +319,9 @@ class _RoomLobbyPageState extends State<RoomLobbyPage> {
                             child: ElevatedButton.icon(
                               onPressed: playersList.length >= 3
                                   ? () {
-                                      context.read<RoomBloc>().add(
-                                            StartGameEvent(room.code),
-                                          );
+                                      roomBloc.add(
+                                        StartGameEvent(room.code),
+                                      );
                                     }
                                   : null,
                               icon: const Icon(Icons.play_arrow),
@@ -341,14 +345,16 @@ class _RoomLobbyPageState extends State<RoomLobbyPage> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        // TODO: Navegar a la pantalla del juego activo
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
                             onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Pantalla de juego próximamente...'),
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => ActiveGamePage(
+                                    roomCode: widget.roomCode,
+                                    playerId: widget.playerId,
+                                  ),
                                 ),
                               );
                             },

@@ -54,6 +54,8 @@ class RoomPlayer extends Equatable {
   final String? targetId;
   final int killCount;
   final bool isHost;
+  final String? assignedWeapon;
+  final String? assignedLocation;
 
   const RoomPlayer({
     required this.id,
@@ -62,6 +64,8 @@ class RoomPlayer extends Equatable {
     this.targetId,
     this.killCount = 0,
     this.isHost = false,
+    this.assignedWeapon,
+    this.assignedLocation,
   });
 
   RoomPlayer copyWith({
@@ -71,6 +75,8 @@ class RoomPlayer extends Equatable {
     String? targetId,
     int? killCount,
     bool? isHost,
+    String? assignedWeapon,
+    String? assignedLocation,
   }) {
     return RoomPlayer(
       id: id ?? this.id,
@@ -79,11 +85,13 @@ class RoomPlayer extends Equatable {
       targetId: targetId ?? this.targetId,
       killCount: killCount ?? this.killCount,
       isHost: isHost ?? this.isHost,
+      assignedWeapon: assignedWeapon ?? this.assignedWeapon,
+      assignedLocation: assignedLocation ?? this.assignedLocation,
     );
   }
 
   @override
-  List<Object?> get props => [id, name, isAlive, targetId, killCount, isHost];
+  List<Object?> get props => [id, name, isAlive, targetId, killCount, isHost, assignedWeapon, assignedLocation];
 }
 
 /// Room status enum
